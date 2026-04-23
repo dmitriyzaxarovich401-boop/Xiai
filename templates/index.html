@@ -3,33 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xiai</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Groq AI • Нейроинтерфейс</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <!-- Анимированный фон с частицами -->
-        <div class="particles-background" id="particles"></div>
-        
-        <!-- Главное окно -->
-        <div class="main-window glass-morphism">
-            <!-- Заголовок -->
-            <div class="header">
-                <div class="header-left">
-                    <div class="ai-avatar pulse-animation">
-                        <div class="avatar-inner">
-                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2"/>
-                                <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2"/>
-                                <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2"/>
-                            </svg>
-                        </div>
+    <!-- Плавающие частицы -->
+    <canvas id="particleCanvas"></canvas>
+    
+    <!-- Главный контейнер -->
+    <div class="app-container">
+        <!-- Сайдбар -->
+        <aside class="sidebar glass-card">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <div class="logo-icon">
+                        <span>⚡</span>
                     </div>
-                    <div class="header-text">
-                        <h1 class="title">Grok AI</h1>
-                        <p class="subtitle">нейросеть нового поколения</p>
+                    <div class="logo-text">
+                        <h2>Groq AI</h2>
+                        <span class="badge">v2.0</span>
                     </div>
                 </div>
-                <div class="header-right">
-                    <button class="icon-btn" id="settingsBtn" title="Настройки">
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-view="chat">
+                    <span class="nav-icon">💬</span>
+                    <span>Чат</span>
+                </button>
+                <button class="nav-item" data-view="models">
+                    <span class="nav-icon">🧠</span>
+                    <span>Модели</span>
+                </button>
+                <button class="nav-item" data-view="stats">
+                    <span class="nav-icon">📊</span>
+                    <span>Статистика</span>
+                </button>
+                <button class="nav-item" id="clearChat">
+                    <span class="nav-icon">🗑️</span>
+                    <span>Очистить</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="status-dot active"></span>
+                    <span>Groq Online</span>
+                </div>
+                <div class="speed-badge">
+                    <span>⚡ Ultra Fast</span>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Основная область чата -->
+        <main class="main-content">
+            <!-- Верхняя панель -->
+            <header class="top-bar glass-card">
+                <div class="model-selector">
+                    <label>Модель:</label>
+                    <select id="modelSelect">
+                        <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+                        <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                        <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant</option>
+                        <option value="gemma2-9b-it">Gemma 2 9B</option>
+                    </select>
+                </div>
+                
+                <div class="controls">
+                    <div class="temp-control">
+                        <label>Температура:</label>
+                        <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                        <span id="tempValue">0.7</span>
+                    </div>
+                    <button class="stream-toggle active" id="streamToggle">
+                        <span>⚡ Стрим</span>
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Окно чата -->
+            <div class="chat-container glass-card" id="chatContainer">
+                <div class="messages-wrapper" id="messagesWrapper">
+                    <!-- Приветственное сообщение -->
+                    <div class="message bot-message welcome-message">
+                        <div class="message-avatar">
+                            <span>⚡</span>
+                        </div>
+                        <div class="message-content">
+                            <div class="message-bubble glass-bubble">
+                                <h3>🚀 Привет! Я Groq AI</h3>
+                                <p>Работаю на сверхбыстрых чипах Groq. Могу использовать:</p>
+                                <ul>
+                                    <li>🦙 Llama 3.3 70B</li>
+                                    <li>🔮 Mixtral 8x7B</li>
+                                    <li>⚡ Llama 3.1 8B (мгновенный)</li>
+                                    <li>💎 Gemma 2 9B</li>
+                                </ul>
+                                <p class="highlight">Скорость ответа до 500 токенов/сек!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Индикатор печати -->
+                <div class="typing-indicator" id="typingIndicator" style="display:none;">
+                    <div class="typing-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <span class="typing-text">Groq генерирует ответ...</span>
+                </div>
+            </div>
+            
+            <!-- Поле ввода -->
+            <div class="input-area glass-card">
+                <div class="input-container">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Напиши сообщение... Groq ответит мгновенно ⚡"
+                        rows="1"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M22 2L11 13" stroke="currentColor" stroke-width="2"/>
+                            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="input-hints">
+                    <span class="hint">Shift + Enter — новая строка</span>
+                    <span class="hint">Enter — отправить</span>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
